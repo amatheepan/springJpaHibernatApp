@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm orm_2_0.xsd"
+	version="2.0">
+	<named-query name="getUserWithUserRoles">
+		<query>
+			select u from User u join fetch u.userRoles where
+			u.userId=:userId
+		</query>
+	</named-query>
+
+	<named-query name="getUserByUserId">
+		<query>
+			select u from User u where u.userId=:userId
+		</query>
+	</named-query>
+
+	<named-query name="getRolesForUser">
+		<query>
+			select r from Role r join r.userRoles ur join ur.user u ON
+			u.userId=:userId
+		</query>
+	</named-query>
+
+
+</entity-mappings>

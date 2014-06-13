@@ -1,0 +1,83 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+                           http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd">
+	
+	
+	<!-- Define Basic Data Source single driver is seperated to give genericness for application. -->
+	<bean id="baseDs" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close" abstract="true" p:driverClassName="${db.driver}" />
+
+
+    <!-- Data base credentials -->     
+	<bean id="ds_common" class="org.apache.commons.dbcp.BasicDataSource"
+		parent="baseDs" 
+		p:url="${db.url.common}" 
+		p:username="${db.user.common}"
+		p:password="${db.password.common}" />
+		
+	<!-- jdbc scripts -->	
+	<jdbc:initialize-database data-source="ds_common"
+		ignore-failures="DROPS">
+		<jdbc:script location="classpath:sql/common/MIV_COMMON_DDL_DROP_SCRIPTS.sql" />
+		<jdbc:script location="classpath:sql/common/MIV_COMMON_DDL_CREATE_SCRIPTS.sql" />
+		<jdbc:script location="classpath:sql/common/insert.sql" />
+	</jdbc:initialize-database>
+
+    <!-- send the persistence unitname to transaction synchronization manager -->
+    <bean id="entityManagerFactory" class="org.own.ste.admin.repository.SteEntityManagerFactory">
+       <constructor-arg>
+            <map>
+                <entry key="stePu_Common">
+                    <!-- Here we have to pass the parent attribute to give where the entity annotation -->
+                    <bean class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean" parent="baseEntityManagerFactory">
+                       <!-- data source reference we have to call here. -->
+                       <property name="dataSource" ref="ds_common"/>
+                       <!-- Here only we are declaring persistence unitname,actually some
+                       developers will place this persistence unit name in orm.xml
+                       if u are wish to change this logic place persitence unit name in
+                       persistence.xml under meta-inf folder and call here.. -->
+                       <property name="persistenceUnitName" value="steUnitCommon"/>
+                     </bean>   
+                </entry>
+            </map>
+       </constructor-arg>
+       <constructor-arg value="stePu_Common"/>
+    </bean>
+    
+    <bean id="baseEntityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
+		abstract="true">
+
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" />
+		</property>
+
+		<property name="jpaProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">true</prop>
+			</props>
+		</property>
+
+		<property name="packagesToScan">
+			<list>
+				<value>org.own.ste.domain.entity</value>
+			</list>
+		</property>
+
+		<property name="mappingResources">
+			<list>
+				<value>META-INF/orm.xml</value>
+			</list>
+		</property>
+
+	</bean>
+
+	<!-- Post Processor -->
+	<bean id="postProcessor"
+		class="org.springframework.orm.jpa.support.PersistenceAnnotationBeanPostProcessor" />
+</beans>                           
